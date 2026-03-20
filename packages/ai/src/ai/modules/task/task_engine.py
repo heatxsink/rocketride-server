@@ -383,7 +383,7 @@ class Task(DAPBase):
                 'components': self._pipeline.get('components', []),
             },
             'threadCount': self._threads,
-            'pipelineTraceLevel': self._pipelineTraceLevel or None
+            'pipelineTraceLevel': self._pipelineTraceLevel or None,
         }
 
         return {
@@ -504,17 +504,12 @@ class Task(DAPBase):
                     stop=stop_after_attempt(10),
                     wait=wait_fixed(0.15),
                     reraise=True,
-                    before_sleep=lambda retry_state: self.debug_message(
-                        f'Data connection attempt {retry_state.attempt_number} failed, '
-                        f'retrying in 0.15s: {retry_state.outcome.exception()}'
-                    ),
+                    before_sleep=lambda retry_state: self.debug_message(f'Data connection attempt {retry_state.attempt_number} failed, retrying in 0.15s: {retry_state.outcome.exception()}'),
                 )
                 async def _connect_data_client():
                     # Don't retry if subprocess has died
                     if self._engine_process and self._engine_process.returncode is not None:
-                        raise RuntimeError(
-                            f'Subprocess exited with code {self._engine_process.returncode}'
-                        )
+                        raise RuntimeError(f'Subprocess exited with code {self._engine_process.returncode}')
                     transport = TransportWebSocket(uri)
                     name = f'DATA-{self.id}'
                     client = DAPClient(module=name, transport=transport)
@@ -1059,13 +1054,11 @@ class Task(DAPBase):
             # If this task is started with tracing
             if self._pipelineTraceLevel:
                 # Forward off the event
-                await self._forward_task_event(
-                    EVENT_TYPE.FLOW,
-                    flow
-                )
+                await self._forward_task_event(EVENT_TYPE.FLOW, flow)
 
         # Handle real-time node-to-UI SSE messages (pass-through, no status tracking)
         elif event_type == 'apaevt_sse':
+            self.reset_idle_timer()
             await self._forward_task_event(EVENT_TYPE.SSE, message)
 
         # Handle debug output
@@ -1386,12 +1379,7 @@ class Task(DAPBase):
 
             # Setup the first part of the command line args
             # --autoterm: exit when parent dies (stdin closes)
-            child_args = [
-                CONST_AI_NODE_SCRIPT,
-                self._tmpfile,
-                '--autoterm',
-                '--monitor=app'
-            ]
+            child_args = [CONST_AI_NODE_SCRIPT, self._tmpfile, '--autoterm', '--monitor=app']
 
             # Configure execution environment
             if self._is_debugging() and self._get_attach_subprocesses():
@@ -1458,7 +1446,7 @@ class Task(DAPBase):
                     try:
                         child_args.extend(shlex.split(arg))
                     except ValueError as e:
-                        self.debug_message(f"Failed to parse engine arg {arg!r}: {e}, using as-is")
+                        self.debug_message(f'Failed to parse engine arg {arg!r}: {e}, using as-is')
                         child_args.append(arg)
                 else:
                     child_args.append(arg)
